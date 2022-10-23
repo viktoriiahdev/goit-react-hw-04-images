@@ -1,37 +1,33 @@
-import React from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 import GalleryModal from './Modal.styled';
 
-class Modal extends React.Component {
-  handleOverlayClick = e => {
-    if (e.currentTarget === e.target) this.props.onClose(null);
+const Modal = ({ img, alt, onClose }) => {
+  const handleOverlayClick = e => {
+    if (e.currentTarget === e.target) onClose();
   };
 
-  handleKeyDown = e => {
-    if (e.code === 'Escape') this.props.onClose(null);
-  };
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if (e.code === 'Escape') onClose();
+    };
 
-  componentDidMount() {
-    document.addEventListener('keydown', this.handleKeyDown);
-  }
+    document.addEventListener('keydown', handleKeyDown);
 
-  componentWillUnmount() {
-    document.removeEventListener('keydown', this.handleKeyDown);
-  }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 
-  render() {
-    const { img, alt } = this.props;
-
-    return (
-      <GalleryModal className="Overlay" onClick={this.handleOverlayClick}>
-        <div className="Modal">
-          <img src={img} alt={alt} />
-        </div>
-      </GalleryModal>
-    );
-  }
-}
+  return (
+    <GalleryModal className="Overlay" onClick={handleOverlayClick}>
+      <div className="Modal">
+        <img src={img} alt={alt} />
+      </div>
+    </GalleryModal>
+  );
+};
 
 export default Modal;
 

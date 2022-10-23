@@ -1,52 +1,46 @@
-import React from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 
 import Header from './Searchbar.styled';
 import Form from './SearchForm.styled';
 
-class Searchbar extends React.Component {
-  state = {
-    query: '',
+const Searchbar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('');
+
+  const handleChange = e => {
+    setQuery(e.currentTarget.value);
   };
 
-  handleChange = e => {
-    this.setState({ query: e.currentTarget.value });
-  };
-
-  handleSubmit = e => {
+  const handleSubmit = e => {
     e.preventDefault();
-    this.props.onSubmit(this.state.query);
-    this.resetForm();
+    onSubmit(query);
+    resetForm();
   };
 
-  resetForm = () => {
-    this.setState({
-      query: '',
-    });
+  const resetForm = () => {
+    setQuery('');
   };
 
-  render() {
-    return (
-      <Header className="Searchbar">
-        <Form className="SearchForm" onSubmit={this.handleSubmit}>
-          <button type="submit" className="SearchForm-button">
-            <span className="SearchForm-button-label">Search</span>
-          </button>
+  return (
+    <Header className="Searchbar">
+      <Form className="SearchForm" onSubmit={handleSubmit}>
+        <button type="submit" className="SearchForm-button">
+          <span className="SearchForm-button-label">Search</span>
+        </button>
 
-          <input
-            className="SearchForm-input"
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            onChange={this.handleChange}
-            value={this.state.query}
-          />
-        </Form>
-      </Header>
-    );
-  }
-}
+        <input
+          className="SearchForm-input"
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          onChange={handleChange}
+          value={query}
+        />
+      </Form>
+    </Header>
+  );
+};
 
 export default Searchbar;
 

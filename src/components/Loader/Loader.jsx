@@ -16,7 +16,6 @@ const Loader = ({ visible = false }) => (
       zIndex: 99,
     }}
     wrapperClass=""
-    visible={visible}
   />
 );
 

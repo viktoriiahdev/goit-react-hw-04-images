@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react';
+import { StrictMode, useState, useEffect } from 'react';
 
 import { fetchImages } from 'services/fetchImages';
 
@@ -6,79 +6,92 @@ import Section from './Section/Section.styled';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
-import Modal from './Modal/Modal';
 import Loader from './Loader/Loader';
+import { useRef } from 'react';
 
-class App extends React.Component {
-  state = {
-    images: null,
-    modalImage: null,
-    loading: false,
-    page: 0,
-    perPage: 12,
-    total: 0,
-    query: '',
-  };
+const App = () => {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('idle');
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page, perPage } = this.state;
-    if (prevState.page === page && prevState.query === query) return;
+  const showLoadMore = useRef(false);
 
-    let currentPage = page;
-    if (prevState.query !== query) currentPage = 1;
-    this.setState({ loading: true });
+  const perPage = 12;
 
-    fetchImages(query, currentPage, perPage)
+  useEffect(() => {
+    if (!query) return;
+
+    setStatus('pending');
+    fetchImages(query, page, perPage)
       .then(json => {
-        if (currentPage === 1) this.setState({ images: json.hits, page: currentPage });
-        else
-          this.setState(prev => ({
-            images: [...prev.images, ...json.hits],
-          }));
-
-        this.setState({
-          total: json.total,
-        });
+        if (!json.total) throw new Error();
+        showLoadMore.current = json.total > page * perPage;
+        setImages(prev => [...prev, ...json.hits]);
+        setStatus('resolved');
       })
-      .finally(this.setState({ loading: false }));
-  }
+      .catch(error => {
+        showLoadMore.current = false;
+        setImages([]);
+        setStatus('rejected');
+      });
+  }, [page, query]);
 
-  searchImages = query => {
-    this.setState({ query });
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  loadMore = () => {
-    this.setState(prev => ({ page: prev.page + 1 }));
+  const searchImages = query => {
+    setImages([]);
+    setQuery(query);
+    setPage(1);
   };
 
-  onModalOpen = image => {
-    this.setState({ modalImage: image });
-  };
-
-  onModalClose = () => {
-    this.setState({ modalImage: null });
-  };
-
-  onModalToggle = image => {
-    this.setState({ modalImage: image });
-  };
-
-  render() {
-    const { images, loading, modalImage, total, perPage, page } = this.state;
-    const loadMore = total > page * perPage;
-
+  if (status === 'idle') {
     return (
       <StrictMode>
         <Section>
-          <Searchbar onSubmit={this.searchImages} />
-          {images && <ImageGallery images={images} onOpen={this.onModalToggle} />}
-          {loadMore && <Button onClick={this.loadMore} disabled={loading} />}
-          <Loader visible={loading} />
-          {modalImage && <Modal img={modalImage} alt="" onClose={this.onModalToggle} />}
+          <Searchbar onSubmit={searchImages} />
         </Section>
       </StrictMode>
     );
   }
-}
+
+  if (status === 'pending') {
+    return (
+      <StrictMode>
+        <Section>
+          <Searchbar onSubmit={searchImages} />
+          {images && <ImageGallery images={images} />}
+          {showLoadMore.current && <Button onClick={loadMore} disabled={true} />}
+          <Loader />
+        </Section>
+      </StrictMode>
+    );
+  }
+
+  if (status === 'resolved') {
+    return (
+      <StrictMode>
+        <Section>
+          <Searchbar onSubmit={searchImages} />
+          {images && <ImageGallery images={images} />}
+          {showLoadMore.current && <Button onClick={loadMore} disabled={false} />}
+        </Section>
+      </StrictMode>
+    );
+  }
+
+  if (status === 'rejected') {
+    return (
+      <StrictMode>
+        <Section>
+          <Searchbar onSubmit={searchImages} />
+          <h2 style={{ textAlign: 'center' }}>Images not found!</h2>
+        </Section>
+      </StrictMode>
+    );
+  }
+};
 
 export default App;
